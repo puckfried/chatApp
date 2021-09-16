@@ -1,38 +1,42 @@
 import express from 'express';
 import cors from 'cors'
 import {Server} from 'socket.io'
-// import http from 'http'
-import { createServer } from "http";
 
 
 // const app = express();
 const app = express()
 const PORT = 4000
-const httpServer = createServer(app)
-const io = new Server(httpServer,{cors: {origin: '*'}})
+const http = app.listen(PORT)
+
+const io = new Server(http,{cors: {origin: '*'}})
  
+  
+const newConnection = (socket) => {
+  const counterMsg = (data) => {
+    socket.emit('counter', data)
+    console.log('way to server')
 
-io.on('connection', (socket) => {
-    console.log('Connection established');
-   
-  getApiAndEmit(socket);
-    socket.on('disconnect', () => {
-      console.log('Disconnected');
-    });
-  });
+  }
   
-  
-  const getApiAndEmit = (socket) => {
-    const response = 'response you need';
-    socket.emit('FromAPI', response);
-  };
-  
-  app.set('port', process.env.PORT || 5000);
+  const distributeMsg = (data) => {
+    console.log('message arrive?', data)
+    io.emit('msg', data)
+  }
 
-  httpServer.listen(app.get('port'), function () {
-    var port = httpServer.address().port;
-    console.log('Running on : ', port);
-  });
+
+  console.log('new Connection', socket.id)
+  socket.on('counter', counterMsg)
+  // socket.off('counter', counterMsg)
+  socket.on('disconnect', () => socket.removeAllListeners())
+  socket.on('msg', (data) => distributeMsg(data))
+}
+
+
+
+io.on('connection', newConnection)
+
+ app.set('port', process.env.PORT || 5000);
+
 
 
 // 03023590690 - info@kulturleben-berlin.de - Einkommensnachweis
